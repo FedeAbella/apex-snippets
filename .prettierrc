@@ -22,6 +22,12 @@
       "options": {
         "tabWidth": 4
       }
+    },
+    {
+      "files": "*.cls",
+      "options": {
+        "tabWidth": 4
+      }
     }
   ]
 }
