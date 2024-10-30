@@ -46,3 +46,6 @@ $RECYCLE.BIN/
 
 # Jest config
 jest.config.js
+
+# Local scripts
+scripts/
