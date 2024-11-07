@@ -4,13 +4,10 @@
  */
 public inherited sharing abstract class TestSObjectFactory {
     private static final String RECORD_TYPE_ID_FIELD_NAME = 'RecordTypeId';
+
     private final SObjectType type = this.getType();
-    private final Map<String, RecordTypeInfo> typeRecordTypes = this.type.getDescribe(
-            SObjectDescribeOptions.DEFERRED
-        )
-        .getRecordTypeInfosByDeveloperName();
+    private final Map<SObjectField, Object> defaults = this.getDefaults();
     private String recordTypeId;
-    private List<SObject> records = new List<SObject>();
     private Map<SObjectField, Object> fieldValues = new Map<SObjectField, Object>();
     private Map<SObjectField, Object> fieldsToPopulate;
 
@@ -19,9 +16,7 @@ public inherited sharing abstract class TestSObjectFactory {
      * @param fieldValues a map of field tokens to the value given to that field
      * @return the factory instance
      */
-    public TestSObjectFactory withFieldValues(
-        Map<SObjectField, Object> fieldValues
-    ) {
+    public TestSObjectFactory withFieldValues(Map<SObjectField, Object> fieldValues) {
         this.fieldValues = fieldValues;
         return this;
     }
@@ -32,14 +27,19 @@ public inherited sharing abstract class TestSObjectFactory {
      * @return the factory instance
      */
     public TestSObjectFactory withRecordType(String developerName) {
-        if (!this.typeRecordTypes.containsKey(developerName)) {
-            throw new TestSObjectFactoryException(
-                'Invalid record type for SObjectType'
-            );
-        }
+        this.recordTypeId = this.type.getDescribe(SObjectDescribeOptions.DEFERRED)
+            .getRecordTypeInfosByDeveloperName()
+            .get(developerName)
+            ?.getRecordTypeId();
+        return this;
+    }
 
-        this.recordTypeId = this.typeRecordTypes.get(developerName)
-            .getRecordTypeId();
+    /**
+     * @description Disable setting default values on fields
+     * @return the factory instance
+     */
+    public TestSObjectFactory withoutDefaults() {
+        this.defaults.clear();
         return this;
     }
 
@@ -49,30 +49,27 @@ public inherited sharing abstract class TestSObjectFactory {
      * @return a list of the inserted records
      */
     public List<SObject> put(Integer count) {
-        this.createRecords(count);
-        Database.insert(this.records, true, AccessLevel.SYSTEM_MODE);
-        return this.records;
+        List<SObject> records = this.createRecords(count);
+        Database.insert(records, true, AccessLevel.SYSTEM_MODE);
+        return records;
     }
 
-    private Map<SObjectField, Object> getFieldsToPopulate() {
-        Map<SObjectField, Object> fieldsToPopulate = this.getDefaults().clone();
-        fieldsToPopulate.putAll(this.fieldValues);
-        return fieldsToPopulate;
-    }
-
-    private void createRecords(Integer count) {
+    private List<SObject> createRecords(Integer count) {
         this.setFieldsToPopulate();
 
+        List<SObject> records = new List<SObject>();
         for (Integer i = 0; i < count; i++) {
             SObject sObj = this.type.newSObject();
             if (this.recordTypeId != null) {
                 sObj.put(RECORD_TYPE_ID_FIELD_NAME, this.recordTypeId);
             }
             for (SObjectField field : this.fieldsToPopulate.keySet()) {
-                sObj.put(field, getFieldValueToPopulate(field, i));
+                sObj.put(field, getFieldValue(field, i));
             }
-            this.records.add(sObj);
+            records.add(sObj);
         }
+
+        return records;
     }
 
     private void setFieldsToPopulate() {
@@ -80,7 +77,7 @@ public inherited sharing abstract class TestSObjectFactory {
         this.fieldsToPopulate.putAll(this.fieldValues);
     }
 
-    private Object getFieldValueToPopulate(SObjectField field, Integer index) {
+    private Object getFieldValue(SObjectField field, Integer index) {
         Object mapValue = this.fieldsToPopulate.get(field);
         if (mapValue instanceof List<Object>) {
             return ((List<Object>) mapValue).get(index);
@@ -90,10 +87,4 @@ public inherited sharing abstract class TestSObjectFactory {
 
     private abstract SObjectType getType();
     private abstract Map<SObjectField, Object> getDefaults();
-
-    /**
-     * @description Custom exception class
-     */
-    public class TestSObjectFactoryException extends Exception {
-    }
 }
