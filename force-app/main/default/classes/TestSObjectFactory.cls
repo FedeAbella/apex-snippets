@@ -68,11 +68,11 @@ public inherited sharing abstract class TestSObjectFactory {
         List<SObject> records = new List<SObject>();
         for (Integer i = 0; i < count; i++) {
             SObject sObj = this.type.newSObject();
-            if (this.recordTypeId != null) {
-                sObj.put(RECORD_TYPE_ID_FIELD_NAME, this.recordTypeId);
-            }
             for (SObjectField field : this.fieldsToPopulate.keySet()) {
                 sObj.put(field, getFieldValue(field, i));
+            }
+            if (this.recordTypeId != null) {
+                sObj.put(RECORD_TYPE_ID_FIELD_NAME, this.recordTypeId);
             }
             records.add(sObj);
         }
