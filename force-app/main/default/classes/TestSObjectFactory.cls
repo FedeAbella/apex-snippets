@@ -48,13 +48,21 @@ public inherited sharing abstract class TestSObjectFactory {
      * @param count the number of records to insert
      * @return a list of the inserted records
      */
-    public List<SObject> put(Integer count) {
-        List<SObject> records = this.createRecords(count);
+    public List<SObject> create(Integer count) {
+        List<SObject> records = this.buildRecords(count);
         Database.insert(records, true, AccessLevel.SYSTEM_MODE);
         return records;
     }
 
-    private List<SObject> createRecords(Integer count) {
+    /**
+     * @description Create and insert a single test record
+     * @return the inserted sObject
+     */
+    public SObject createSingle() {
+        return create(1).get(0);
+    }
+
+    private List<SObject> buildRecords(Integer count) {
         this.setFieldsToPopulate();
 
         List<SObject> records = new List<SObject>();
