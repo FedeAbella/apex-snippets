@@ -4,6 +4,7 @@
  */
 public inherited sharing abstract class TestSObjectFactory {
     private static final String RECORD_TYPE_ID_FIELD_NAME = 'RecordTypeId';
+    private static final String ID_FIELD_NAME = 'Id';
 
     private final SObjectType type = this.getType();
     private final Map<SObjectField, Object> defaults = this.getDefaults();
@@ -87,10 +88,17 @@ public inherited sharing abstract class TestSObjectFactory {
 
     private Object getFieldValue(SObjectField field, Integer index) {
         Object mapValue = this.fieldsToPopulate.get(field);
+        Object value;
         if (mapValue instanceof List<Object>) {
-            return ((List<Object>) mapValue).get(index);
+            value = ((List<Object>) mapValue).get(index);
+        } else {
+            value = mapValue;
         }
-        return mapValue;
+
+        if (value instanceof SObject) {
+            value = ((SObject) value).get(ID_FIELD_NAME);
+        }
+        return value;
     }
 
     private abstract SObjectType getType();
